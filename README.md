@@ -7,7 +7,7 @@
 **Quantum-walker-based prediction of allosteric (distal regulatory) pockets in proteins from
 their unbound (apo) 3D structure.**
 
-Given an apo PDB and (optionally) its drug-bound (holo) partner, QuanAllo identifies
+Given an apo PDB and (optionally) its drug-bound (holo) partner, QuanAnts identifies
 candidate residues for allosteric drug binding using a suite of quantum and
 quantum-inspired graph algorithms — and lets you combine them into ant-colony
 ensembles that communicate via a shared pheromone field.
@@ -46,21 +46,21 @@ ensembles that communicate via a shared pheromone field.
 ## Installation
 
 ```bash
-pip install quanallo
+pip install QuanAnts
 ```
 
 For development:
 
 ```bash
-git clone https://github.com/quanallo/quanallo.git
-cd quanallo
+git clone https://github.com/QuanAnts/QuanAnts.git
+cd QuanAnts
 pip install -e ".[dev]"
 ```
 
 Optional — install [Qiskit](https://qiskit.org/) for the actual quantum circuit demos:
 
 ```bash
-pip install "quanallo[quantum]"
+pip install "QuanAnts[quantum]"
 ```
 
 ---
@@ -68,7 +68,7 @@ pip install "quanallo[quantum]"
 ## Quick start
 
 ```python
-from quanallo import AllostericPredictor
+from QuanAnts import AllostericPredictor
 
 # Most basic: APO-only prediction with sensible defaults
 predictor = AllostericPredictor()
@@ -97,7 +97,7 @@ print(result.precision_at_k)      # dict[hop_tolerance] -> precision
 
 ## Methods
 
-QuanAllo exposes nine predictor methods, all with the same scoring interface:
+QuanAnts exposes nine predictor methods, all with the same scoring interface:
 
 ### Quantum & quantum-inspired
 
@@ -126,8 +126,8 @@ QuanAllo exposes nine predictor methods, all with the same scoring interface:
 Use any method standalone:
 
 ```python
-from quanallo import ProteinGraph
-from quanallo.methods import DQAWLifetime
+from QuanAnts import ProteinGraph
+from QuanAnts.methods import DQAWLifetime
 
 graph = ProteinGraph.from_pdb("4OBE.pdb", auto_active_site_ligand="GDP")
 method = DQAWLifetime(alpha=0.4, gamma_absorb=0.2, hop_mu=2.0)
@@ -144,7 +144,7 @@ communication. Each ant is a perturbed instance of a method; deposits on its
 top-k residues reinforce the pheromone trail; subsequent ants are biased by it.
 
 ```python
-from quanallo.quanant import QuanAntColony
+from QuanAnts.quanant import QuanAntColony
 
 # Single-species colony (30 DQAW-Lifetime ants)
 colony = QuanAntColony(
@@ -173,7 +173,7 @@ Use APO to learn per-species reliability, then deploy on HOLO with online
 adaptive corrections:
 
 ```python
-from quanallo.quanant import AdaptiveQuanAnt
+from QuanAnts.quanant import AdaptiveQuanAnt
 
 quanant = AdaptiveQuanAnt(
     species=["qsvd", "dqaw_lifetime", "qpagerank", "heatkernel"],
@@ -190,7 +190,7 @@ print(result.species_weights_history)       # weight trajectory per iteration
 ## API overview
 
 ```
-quanallo/
+QuanAnts/
 ├── ProteinGraph              # Core data structure
 ├── AllostericPredictor       # High-level Predictor (recommended starting point)
 ├── methods/                  # Individual prediction methods

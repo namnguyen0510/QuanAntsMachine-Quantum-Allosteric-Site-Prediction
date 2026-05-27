@@ -212,7 +212,7 @@ quanallo/
 
 ## Examples
 
-See [`examples/`](examples/):
+See [`examples_notebooks/`](examples_notebooks/):
 
 1. **[01_quick_start.ipynb](examples/01_quick_start.ipynb)** — minimum-effort prediction from a PDB
 2. **[02_methods_deep_dive.ipynb](examples/02_methods_deep_dive.ipynb)** — compare all 9 methods on KRAS G12C

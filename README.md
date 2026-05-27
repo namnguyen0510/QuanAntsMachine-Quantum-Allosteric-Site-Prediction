@@ -38,7 +38,7 @@ ensembles that communicate via a shared pheromone field.
 | **APO → HOLO transfer learning** | Learn species reliability on APO, deploy on HOLO                |
 | **Voting strategies**            | Argmax, MMR (diversity), RRF, mean / max / weighted             |
 | **Parallel execution**           | Thread/process pool with auto-detection                         |
-| **Rich visualization**           | Bars, recall curves, species contribution, 3D structures        |
+| **Visualization**           | Bars, recall curves, species contribution, 3D structures        |
 
 ---
 

@@ -221,20 +221,10 @@ See [`examples/`](examples/):
 ---
 
 ## Citation
-
-If you use QuanAllo in your research, please cite:
-
-```bibtex
-@software{quanallo2026,
-  title  = {QuanAllo: Quantum walker-based allosteric site prediction},
-  author = {QuanAllo Contributors},
-  year   = {2026},
-  url    = {https://github.com/quanallo/quanallo},
-}
-```
+[In Submission]
 
 ---
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+CC BY-NC — see [LICENSE](LICENSE).

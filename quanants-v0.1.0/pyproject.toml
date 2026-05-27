@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quanallo"
+version = "0.1.0"
+description = "Quantum walker–based allosteric site prediction for proteins"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "QuanAllo Contributors" },
+]
+keywords = [
+    "quantum-computing", "protein", "allostery", "drug-discovery",
+    "structural-biology", "graph-algorithms", "ant-colony"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.9",
+    "pandas>=1.5",
+    "scikit-learn>=1.1",
+    "matplotlib>=3.5",
+    "biopython>=1.79",
+    "networkx>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1",
+    "jupyter>=1.0",
+]
+quantum = [
+    "qiskit>=1.0",
+    "qiskit-aer>=0.13",
+]
+all = ["quanallo[dev,quantum]"]
+
+[project.urls]
+Homepage = "https://github.com/quanallo/quanallo"
+Documentation = "https://quanallo.readthedocs.io"
+Repository = "https://github.com/quanallo/quanallo"
+Issues = "https://github.com/quanallo/quanallo/issues"
+
+[project.scripts]
+quanallo = "quanallo.cli:main"
+
+[tool.setuptools]
+packages = [
+    "quanallo",
+    "quanallo.data",
+    "quanallo.core",
+    "quanallo.methods",
+    "quanallo.quanant",
+    "quanallo.pipeline",
+    "quanallo.visualization",
+]
+
+[tool.setuptools.package-data]
+quanallo = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]

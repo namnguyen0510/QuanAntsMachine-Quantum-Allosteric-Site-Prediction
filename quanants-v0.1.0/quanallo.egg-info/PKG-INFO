@@ -1,0 +1,285 @@
+Metadata-Version: 2.4
+Name: quanallo
+Version: 0.1.0
+Summary: Quantum walker–based allosteric site prediction for proteins
+Author: QuanAllo Contributors
+License: Apache-2.0
+Project-URL: Homepage, https://github.com/quanallo/quanallo
+Project-URL: Documentation, https://quanallo.readthedocs.io
+Project-URL: Repository, https://github.com/quanallo/quanallo
+Project-URL: Issues, https://github.com/quanallo/quanallo/issues
+Keywords: quantum-computing,protein,allostery,drug-discovery,structural-biology,graph-algorithms,ant-colony
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Physics
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.22
+Requires-Dist: scipy>=1.9
+Requires-Dist: pandas>=1.5
+Requires-Dist: scikit-learn>=1.1
+Requires-Dist: matplotlib>=3.5
+Requires-Dist: biopython>=1.79
+Requires-Dist: networkx>=2.8
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
+Requires-Dist: jupyter>=1.0; extra == "dev"
+Provides-Extra: quantum
+Requires-Dist: qiskit>=1.0; extra == "quantum"
+Requires-Dist: qiskit-aer>=0.13; extra == "quantum"
+Provides-Extra: all
+Requires-Dist: quanallo[dev,quantum]; extra == "all"
+Dynamic: license-file
+
+# QuanAllo — Quantum Allosteric Site Prediction
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+**Quantum-walker-based prediction of allosteric (distal regulatory) pockets in proteins from
+their unbound (apo) 3D structure.**
+
+Given an apo PDB and (optionally) its drug-bound (holo) partner, QuanAllo identifies
+candidate residues for allosteric drug binding using a suite of quantum and
+quantum-inspired graph algorithms — and lets you combine them into ant-colony
+ensembles that communicate via a shared pheromone field.
+
+---
+
+## Table of contents
+
+- [Highlights](#highlights)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Methods](#methods)
+- [QuanAnt Machines](#quanant-machines)
+- [API overview](#api-overview)
+- [Examples](#examples)
+- [Citation](#citation)
+
+---
+
+## Highlights
+
+| Capability                       | Description                                                     |
+| -------------------------------- | --------------------------------------------------------------- |
+| **PDB → graph extraction**       | One-line residue contact graph from any PDB, with SASA, surface |
+| **9 prediction methods**         | QSVD, DQAW-TimeAvg, DQAW-Lifetime, QPageRank, HeatKernel,       |
+|                                  | CommuteTime, GNM, CTQW, supervised MetaLearner                  |
+| **QuanAnt colonies**             | Homogeneous, heterogeneous (multi-species), and adaptive        |
+| **Pheromone communication**      | Shared trail map biases all ants toward consensus               |
+| **APO → HOLO transfer learning** | Learn species reliability on APO, deploy on HOLO                |
+| **Voting strategies**            | Argmax, MMR (diversity), RRF, mean / max / weighted             |
+| **Parallel execution**           | Thread/process pool with auto-detection                         |
+| **Rich visualization**           | Bars, recall curves, species contribution, 3D structures        |
+
+---
+
+## Installation
+
+```bash
+pip install quanallo
+```
+
+For development:
+
+```bash
+git clone https://github.com/quanallo/quanallo.git
+cd quanallo
+pip install -e ".[dev]"
+```
+
+Optional — install [Qiskit](https://qiskit.org/) for the actual quantum circuit demos:
+
+```bash
+pip install "quanallo[quantum]"
+```
+
+---
+
+## Quick start
+
+```python
+from quanallo import AllostericPredictor
+
+# Most basic: APO-only prediction with sensible defaults
+predictor = AllostericPredictor()
+result = predictor.predict_from_pdb(
+    apo_pdb="4OBE.pdb",
+    auto_active_site_ligand="GDP",  # detect active site near GDP
+    top_k=5,
+)
+print(result.top_residues)        # list of (chain, resnum, resname)
+print(result.scores)              # per-residue prediction scores
+print(result.method_used)         # 'dqaw_lifetime' (default)
+
+# With HOLO validation
+result = predictor.predict_from_pdb(
+    apo_pdb="4OBE.pdb",
+    holo_pdb="6OIM.pdb",
+    auto_active_site_ligand="GDP",
+    holo_drug_name="MOV",           # Sotorasib
+    top_k=5,
+)
+print(result.weighted_top5)       # 0–5.0, fuzzy GT credit
+print(result.precision_at_k)      # dict[hop_tolerance] -> precision
+```
+
+---
+
+## Methods
+
+QuanAllo exposes nine predictor methods, all with the same scoring interface:
+
+### Quantum & quantum-inspired
+
+| Class            | Physics                                                                  |
+| ---------------- | ------------------------------------------------------------------------ |
+| `QSVD`           | Bottom singular-value subspace of the adjacency matrix                   |
+| `DQAWTimeAvg`    | Non-Hermitian continuous-time quantum walk; time-averaged occupation     |
+| `DQAWLifetime`   | Slowest eigenmodes of H_eff (longest-lived quantum coherences) ⭐         |
+| `QPageRank`      | Personalized PageRank with active site as teleport target                |
+| `HeatKernel`     | Heat propagation on the graph from the active site                       |
+| `CTQW`           | Standard continuous-time quantum walk                                    |
+
+### Classical
+
+| Class            | Physics                                                                  |
+| ---------------- | ------------------------------------------------------------------------ |
+| `CommuteTime`    | Inverse effective resistance to the active site                          |
+| `GNM`            | Gaussian Network Model: covariance of slow normal modes                  |
+
+### Hybrid
+
+| Class            | Description                                                              |
+| ---------------- | ------------------------------------------------------------------------ |
+| `MetaLearner`    | Logistic regression on quantum-derived features (trained on APO GT)      |
+
+Use any method standalone:
+
+```python
+from quanallo import ProteinGraph
+from quanallo.methods import DQAWLifetime
+
+graph = ProteinGraph.from_pdb("4OBE.pdb", auto_active_site_ligand="GDP")
+method = DQAWLifetime(alpha=0.4, gamma_absorb=0.2, hop_mu=2.0)
+scores = method.compute(graph)
+top5 = graph.select_top_k(scores, k=5, mode="mmr")
+```
+
+---
+
+## QuanAnt Machines
+
+The flagship feature: **ant colonies of quantum walkers** with pheromone-based
+communication. Each ant is a perturbed instance of a method; deposits on its
+top-k residues reinforce the pheromone trail; subsequent ants are biased by it.
+
+```python
+from quanallo.quanant import QuanAntColony
+
+# Single-species colony (30 DQAW-Lifetime ants)
+colony = QuanAntColony(
+    species=["dqaw_lifetime"],
+    ants_per_species=30,
+    n_iter=8,
+    parallel=True,
+)
+result = colony.run(graph)
+
+# Multi-species heterogeneous colony (synergy via shared pheromone)
+colony = QuanAntColony(
+    species=["qsvd", "dqaw_lifetime", "qpagerank", "heatkernel"],
+    ants_per_species=6,
+    n_iter=8,
+    aggregation="weighted_consensus",
+)
+result = colony.run(graph)
+print(result.top_residues)
+print(result.species_contribution)   # which species deposited where
+```
+
+### Adaptive QuanAnt (transfer-learn species reliability)
+
+Use APO to learn per-species reliability, then deploy on HOLO with online
+adaptive corrections:
+
+```python
+from quanallo.quanant import AdaptiveQuanAnt
+
+quanant = AdaptiveQuanAnt(
+    species=["qsvd", "dqaw_lifetime", "qpagerank", "heatkernel"],
+    ants_per_species=5,
+    n_iter=7,
+)
+quanant.fit(apo_graph)                     # learn species weights on APO
+result = quanant.predict(holo_graph)        # deploy on HOLO with online updates
+print(result.species_weights_history)       # weight trajectory per iteration
+```
+
+---
+
+## API overview
+
+```
+quanallo/
+├── ProteinGraph              # Core data structure
+├── AllostericPredictor       # High-level Predictor (recommended starting point)
+├── methods/                  # Individual prediction methods
+│   ├── QSVD, DQAWTimeAvg, DQAWLifetime, QPageRank, HeatKernel,
+│   ├── CTQW, CommuteTime, GNM, MetaLearner
+├── quanant/                  # Ant-colony machines
+│   ├── QuanAntColony         # Homo- or heterogeneous colony
+│   ├── AdaptiveQuanAnt       # APO→HOLO transfer with adaptive weighting
+├── core/                     # Utilities
+│   ├── evaluate              # weighted-top-k, precision@k, recall
+│   ├── mmr_top_k             # Maximum Marginal Relevance selection
+│   ├── rrf_combine           # Reciprocal Rank Fusion
+└── visualization/            # Plotting utilities
+    ├── plot_scores_3d        # 3D overlay on protein structure
+    └── plot_comparison       # Bar / line comparisons across methods
+```
+
+---
+
+## Examples
+
+See [`examples/`](examples/):
+
+1. **[01_quick_start.ipynb](examples/01_quick_start.ipynb)** — minimum-effort prediction from a PDB
+2. **[02_methods_deep_dive.ipynb](examples/02_methods_deep_dive.ipynb)** — compare all 9 methods on KRAS G12C
+3. **[03_quanant_advanced.ipynb](examples/03_quanant_advanced.ipynb)** — QuanAnt machines with pheromone visualization
+
+---
+
+## Citation
+
+If you use QuanAllo in your research, please cite:
+
+```bibtex
+@software{quanallo2026,
+  title  = {QuanAllo: Quantum walker-based allosteric site prediction},
+  author = {QuanAllo Contributors},
+  year   = {2026},
+  url    = {https://github.com/quanallo/quanallo},
+}
+```
+
+---
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
